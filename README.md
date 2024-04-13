@@ -5,9 +5,13 @@
 
 #### Create a python virtual environment
 
->> python -m venv ./venv
->> venv\Scripts\activate.bat   (for windows)
+> python -m venv ./venv
+> venv\Scripts\activate.bat   (for windows)
 
 #### Install Requirements
 
->> pip install -r requirements.txt
+> pip install -r requirements.txt
+
+#### Running the UI
+
+> streamlit run ui.py
