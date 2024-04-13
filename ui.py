@@ -30,12 +30,26 @@ def tokenize_prompt(prompt:str) -> List[str]:
     """
     return prompt.split(" ")
 
+def cosign():
+    #placeholder function
+    raise NotImplementedError
+
+def dotprod():
+    #placeholder function
+    raise NotImplementedError
+
 if __name__ == "__main__":
     st.title("Testing 123")
     
     prompt = st.text_input("please enter your prompt")
     
     #layers = st.selectbox("Choose a Layer", get_layer_list())
+    use_dot = st.toggle("Use Dot Product or Cosine Similarity", value=True)
+    st.write(f"{'Dot product' if use_dot else 'Cosine Similarity'} selected")
+    
+    func = dotprod if use_dot else cosign
+    
+    
     features = st.selectbox("Choose a Feature", get_feature_list())
     
     layers = get_layer_list()
