@@ -4,3 +4,6 @@ sae_lens
 transformer_lens
 jaxtyping
 huggingface_hub
+streamlit
+matplotlib
+numpy
