@@ -3,15 +3,15 @@ from typing import List
 import matplotlib.pyplot as plt
 import numpy as np
 
+import torch as t
+from sae_lens.toolkit.pretrained_saes import get_gpt2_res_jb_saes
+from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, FactoredMatrix, ActivationCache
+
+from interpretathon import X, get_cosine_similarity, get_dot_product
+
+
 def generate_fake_data(num_rows, num_cols) -> np.array:
     return np.round(np.random.rand(num_rows, num_cols), 2)
-
-def get_feature_list() -> List[str]:
-    """
-    Returns:
-        List: name of features
-    """
-    return ["a", "b", "c"]
 
 def get_layer_list() -> List[str]:
     """
@@ -30,34 +30,37 @@ def tokenize_prompt(prompt:str) -> List[str]:
     """
     return prompt.split(" ")
 
-def cosign():
-    #placeholder function
-    raise NotImplementedError
-
-def dotprod():
-    #placeholder function
-    raise NotImplementedError
 
 if __name__ == "__main__":
+    device = t.device("cuda") if t.cuda.is_available() else t.device("mps")
+    t.set_default_device(device)
+    saes, sparsities = get_gpt2_res_jb_saes()
+    gpt2_small: HookedTransformer = HookedTransformer.from_pretrained("gpt2-small")
+
     st.title("Testing 123")
     
     prompt = st.text_input("please enter your prompt")
+
+    x = X(gpt2_small, saes)
     
     #layers = st.selectbox("Choose a Layer", get_layer_list())
     use_dot = st.toggle("Use Dot Product or Cosine Similarity", value=True)
     st.write(f"{'Dot product' if use_dot else 'Cosine Similarity'} selected")
     
-    func = dotprod if use_dot else cosign
+    func = get_dot_product if use_dot else get_cosine_similarity
     
     
-    features = st.selectbox("Choose a Feature", get_feature_list())
+    features = st.selectbox("choose feature", ['0.4']) # st.selectbox("Choose a Feature", x.get_feature_names())
     
-    layers = get_layer_list()
-    prompt_tok = tokenize_prompt(prompt)
+    layers = range(x.model.cfg.n_layers)
+    prompt_tok = x.model.to_str_tokens(prompt)
     
-    data = generate_fake_data(len(prompt_tok), len(layers))
+    # data = generate_fake_data(len(prompt_tok), len(layers))
+    data = x.run(x.model.to_tokens(prompt), func, x.get_feature_from_name(features).to(device)).detach().cpu()
     
     #st.write(data)
+
+    assert tuple(data.shape) == (len(prompt_tok), len(layers))
 
     fig, ax = plt.subplots()
     im = ax.imshow(data)    
