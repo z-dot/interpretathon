@@ -124,7 +124,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from typing import List, Tuple
 
-def plot_stacked_heatmaps_flipped(tensor, x_axis_names=None, y_axis_ticks=None):
+def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_axis_ticks=None):
     z_data = tensor.numpy()  # Convert tensor to numpy array
     
     if y_axis_ticks is None:
@@ -143,14 +143,14 @@ def plot_stacked_heatmaps_flipped(tensor, x_axis_names=None, y_axis_ticks=None):
     # Create heatmap traces for each layer
     for i in range(z_data.shape[0]):
         trace = go.Heatmap(
-            z=np.flip(z_data[i].T),  # Transpose the data to swap axes
+            z=np.flip(z_data[i].T, 0),  # Transpose the data to swap axes
             y=y_axis_ticks,
             x=[f'{j}' for j in range(z_data.shape[1])],
             hovertemplate="Layer: %{x}<br>Token: '%{y}'<br>%{z}<extra></extra>",
-            colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']],
+            colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']] if normalized else 'viridis',
             showscale=False,
-            zmin=-1,
-            zmax=1
+            zmin=-1 if normalized else None,
+            zmax=1 if normalized else None
         )
         fig.add_trace(trace, col=i+1, row=1)
         fig.update_xaxes(showticklabels=False)
@@ -194,9 +194,9 @@ def str_to_feature_pair(s: str) -> List[Tuple[int, int]]:
     return out
 
 
-def run(model, saes, prompt, features, func, dec=True):
+def run(model, saes, prompt, features, func, dec=True, normalized=True):
     tensor = get_feature_movement(model, saes, [prompt], func, features, dec)
     data = tensor[0].cpu()
-    return plot_stacked_heatmaps_flipped(data, x_axis_names=[f"{layer}.{feature}" for layer, feature in features], y_axis_ticks=model.to_str_tokens(prompt))
+    return plot_stacked_heatmaps_flipped(data, normalized=normalized, x_axis_names=[f"{layer}.{feature}" for layer, feature in features], y_axis_ticks=model.to_str_tokens(prompt))
 
 # %%
