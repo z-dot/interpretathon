@@ -9,6 +9,7 @@ from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, 
 
 from interpretathon import get_cosine_similarity, get_dot_product, run, str_to_feature_pair
 
+            
 
 if __name__ == "__main__":
 
@@ -24,21 +25,29 @@ if __name__ == "__main__":
             st.session_state["MODEL"] = gpt2_small
             st.session_state["MODEL_LOADED"] = True
     
-    prompt = st.text_input("please enter your prompt", value="This movie is amazing! The best I have ever seen")
-    feature = st.text_input("please enter a feature", value="8.23510")
+    
+    prompt = st.text_input("Please enter your prompt", value="This movie is amazing! The best I have ever seen")
+    feature = st.text_input("Please enter a feature", value="8.23510")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        similarity_options = ["Dot Product", "Cosine Similarity"]
+        similarity_func = st.selectbox("Select similarity function", options=similarity_options, index=0)
+        eos = st.checkbox("Include EOS token", value=False)
+    
+    with col2:
+        model_options = ["Decoder", "Encoder"]
+        model_selection = st.selectbox("Select model", options=model_options, index=0)
     
     
-    use_dot = st.toggle("Use Dot Product or Cosine Similarity", value=True)
-    eos = st.toggle("Include EOS token", value=False)
-    dec = st.toggle("Use decoder", value=True)
-    st.write(f"{'Dot product' if use_dot else 'Cosine Similarity'} selected")
-    st.write(f"{'Decoder' if dec else 'Encoder'} selected")
+
+    use_dot = similarity_func == "Dot Product"
+    dec = model_selection == "Decoder"
+    
     func = get_dot_product if use_dot else get_cosine_similarity
     
-    st.button("Calculate!", key="run")
-    
-    if st.session_state["run"]:
-        
+    if prompt:
         with st.spinner("Creating Plot..."):
             
             f = str_to_feature_pair(feature)
@@ -53,4 +62,4 @@ if __name__ == "__main__":
                 eos=eos
             )  
             st.plotly_chart(fig, True)
-            
+    # st.button("Calculate!", key="run")
