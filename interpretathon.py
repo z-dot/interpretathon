@@ -3,6 +3,7 @@ from cgitb import Hook
 from scipy import sparse
 import torch as t
 from torch import Tensor
+import numpy as np
 
 from sae_lens.training.sparse_autoencoder import SparseAutoencoder
 from sae_lens.toolkit.pretrained_saes import get_gpt2_res_jb_saes
@@ -10,7 +11,7 @@ from sae_lens.training.session_loader import LMSparseAutoencoderSessionloader
 from transformer_lens.hook_points import HookPoint
 from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, FactoredMatrix, ActivationCache
 from jaxtyping import Float, Int, Bool
-from typing import List, Optional, Callable, Tuple, Dict, Literal, Set, Union
+from typing import List, Optional, Callable, Sequence, Tuple, Dict, Literal, Set, Union
 import einops
 
 from huggingface_hub import hf_hub_download
@@ -115,76 +116,32 @@ def get_feature_movement(
 # %%
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-
-def plot_stacked_heatmaps(tensor, y_axis_names=None, x_axis_ticks=None):
-    z_data = tensor.numpy()  # Convert tensor to numpy array
-    
-    if x_axis_ticks is None:
-        x_axis_ticks = [f'X{i+1}' for i in range(z_data.shape[1])]
-    
-    if y_axis_names is None:
-        y_axis_names = [f'Y{i+1}' for i in range(z_data.shape[0])]
-    
-    # Create subplots
-    fig = make_subplots(rows=z_data.shape[0], cols=1, vertical_spacing=0.05)
-    
-    # Create heatmap traces for each layer
-    for i in range(z_data.shape[0]):
-        trace = go.Heatmap(
-            z=z_data[i],
-            x=x_axis_ticks,
-            y=[f'Y{j+1}' for j in range(z_data.shape[1])],
-            hovertemplate='X: %{x}<br>Y: %{y}<br>Z: %{z}<extra></extra>',
-            colorscale='Viridis',
-            showscale=False,
-        )
-        fig.add_trace(trace, row=i+1, col=1)
-    
-    # Update figure layout
-    fig.update_layout(
-        title='Stacked Interactive Heatmaps',
-        height=200 * z_data.shape[0],  # Adjust the height based on the number of layers
-        showlegend=False,
-    )
-    
-    # Update x-axis properties for the bottom subplot
-    fig.update_xaxes(title_text='X Axis', row=z_data.shape[0], col=1)
-    
-    # Update y-axis properties for each subplot with the corresponding name from y_axis_names
-    for i in range(z_data.shape[0]):
-        fig.update_yaxes(title_text=y_axis_names[i], row=i+1, col=1)
-    
-    # Hide x-axis labels for subplots except the bottom one
-    for i in range(1, z_data.shape[0]):
-        fig.update_xaxes(showticklabels=False, row=i, col=1)
-    
-    # Display the plot
-    fig.show()
-
-
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+from typing import List, Tuple
 
 def plot_stacked_heatmaps_flipped(tensor, x_axis_names=None, y_axis_ticks=None):
     z_data = tensor.numpy()  # Convert tensor to numpy array
     
     if y_axis_ticks is None:
         y_axis_ticks = [f'Y{i+1}' for i in range(z_data.shape[1])]
+    y_axis_ticks = y_axis_ticks[::-1]
     
     if x_axis_names is None:
         x_axis_names = [f'X{i+1}' for i in range(z_data.shape[0])]
     
+    # Normalize the data to be between -1 and 1
+    # z_data = (z_data - np.min(z_data)) / (np.max(z_data) - np.min(z_data)) * 2 - 1
+    
     # Create subplots
-    fig = make_subplots(cols=z_data.shape[0], rows=1, horizontal_spacing=0.05)
+    fig = make_subplots(cols=z_data.shape[0], rows=1, horizontal_spacing=0.01)
     
     # Create heatmap traces for each layer
     for i in range(z_data.shape[0]):
         trace = go.Heatmap(
-            z=z_data[i].T,  # Transpose the data to swap axes
+            z=np.flip(z_data[i].T),  # Transpose the data to swap axes
             y=y_axis_ticks,
-            x=[f'X{j+1}' for j in range(z_data.shape[1])],
-            hovertemplate='X: %{x}<br>Y: %{y}<br>Z: %{z}<extra></extra>',
-            colorscale='Viridis',
+            x=[f'{j}' for j in range(z_data.shape[1])],
+            hovertemplate="Layer: %{x}<br>Token: '%{y}'<br>%{z}<extra></extra>",
+            colorscale=[[0, 'darkblue'], [0.5, 'white'], [1, 'darkred']],
             showscale=False,
         )
         fig.add_trace(trace, col=i+1, row=1)
@@ -194,30 +151,44 @@ def plot_stacked_heatmaps_flipped(tensor, x_axis_names=None, y_axis_ticks=None):
     fig.update_layout(
         width=200 * z_data.shape[0],  # Adjust the width based on the number of layers
         showlegend=False,
+        font_family="Courier",
+        plot_bgcolor='white',
+        paper_bgcolor='white',
     )
     
     # Update y-axis properties for the leftmost subplot
-    fig.update_yaxes(title_text='Y Axis', col=1, row=1)
+    fig.update_yaxes(col=1, row=1)
     
     # Update x-axis properties for each subplot with the corresponding name from x_axis_names
     for i in range(z_data.shape[0]):
-        fig.update_xaxes(title_text=x_axis_names[i], col=i+1, row=1)
+        fig.update_xaxes(title_text=x_axis_names[i], col=i+1, row=1, title_font=dict(size=12))
     
     # Hide y-axis labels for subplots except the leftmost one
     for i in range(2, z_data.shape[0]+1):
         fig.update_yaxes(showticklabels=False, col=i, row=1)
     
+    fig.update_yaxes(side="right", showticklabels=True, col=z_data.shape[0], row=1)
+
+    # Add thin borders between cells
+    fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
+    fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
+
     # Display the plot
-    fig.show()
+    # fig.show()
+    return fig
 
-def visualise(prompt, features):
-    tensor = get_feature_movement(gpt2_small, saes, [prompt], get_cosine_similarity, features)
-    data = tensor[0].cpu()
-    plot_stacked_heatmaps(data, [str(feature) for feature in features], gpt2_small.to_str_tokens(prompt))
+def str_to_feature_pair(s: str) -> List[Tuple[int, int]]:
+    # Example input: '8.123, 123.1222 , 32.123'
+    out = []
+    for x in s.split(','):
+        y = x.strip().split('.')
+        out.append((y[0], y[1]))
+    return out
 
-def visualise_flipped(prompt, features):
-    tensor = get_feature_movement(gpt2_small, saes, [prompt], get_cosine_similarity, features)
+
+def run(model, saes, prompt, features, func, dec=True):
+    tensor = get_feature_movement(model, saes, [prompt], func, features, dec)
     data = tensor[0].cpu()
-    plot_stacked_heatmaps_flipped(data, x_axis_names=[str(feature) for feature in features], y_axis_ticks=gpt2_small.to_str_tokens(prompt))
+    return plot_stacked_heatmaps_flipped(data, x_axis_names=[f"{layer}.{feature}" for layer, feature in features], y_axis_ticks=model.to_str_tokens(prompt))
 
 # %%
