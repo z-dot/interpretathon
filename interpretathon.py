@@ -109,7 +109,7 @@ def get_cosine_similarity(activations_list: List[Float[Tensor, "layer _seq_pos d
 def get_feature(sae: dict[str, SparseAutoencoder], layer: int, feature: int, decoder: bool = True) -> Float[Tensor, "d_model"]:
     if decoder:
         return sae[f"blocks.{layer}.hook_resid_pre"].W_dec[feature]
-    return sae[f"blocks.{layer}.hook_resid_pre"].W_enc[feature]
+    return sae[f"blocks.{layer}.hook_resid_pre"].W_enc[:, feature]
 
 def get_feature_movement(
         model: HookedTransformer,
@@ -159,6 +159,10 @@ def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_
     
     # Normalize the data to be between -1 and 1
     # z_data = (z_data - np.min(z_data)) / (np.max(z_data) - np.min(z_data)) * 2 - 1
+
+    # Sort out EOS
+    if not eos:
+        y_axis_ticks = y_axis_ticks[:-1]
     
     # Create subplots
     fig = make_subplots(cols=z_data.shape[0], rows=1, horizontal_spacing=0.01)
@@ -170,10 +174,11 @@ def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_
             y=y_axis_ticks,
             x=[f'{j}' for j in range(z_data.shape[1])],
             hovertemplate="Layer: %{x}<br>Token: '%{y}'<br>%{z}<extra></extra>",
-            colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']] if normalized else 'viridis',
+            colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']] if normalized else [[0.0, 'white'], [1.0, 'darkgreen']],
             showscale=False,
-            zmin=-1 if normalized else None,
-            zmax=1 if normalized else None
+            zmin=-1 if normalized else 0.0,
+
+            zmax=1 if normalized else z_data[i].max()
         )
         fig.add_trace(trace, col=i+1, row=1)
         fig.update_xaxes(showticklabels=False)

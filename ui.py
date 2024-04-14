@@ -29,8 +29,10 @@ if __name__ == "__main__":
     
     
     use_dot = st.toggle("Use Dot Product or Cosine Similarity", value=True)
-    eos = st.toggle("Include EOS token", value=True)
+    eos = st.toggle("Include EOS token", value=False)
+    dec = st.toggle("Use decoder", value=True)
     st.write(f"{'Dot product' if use_dot else 'Cosine Similarity'} selected")
+    st.write(f"{'Decoder' if dec else 'Encoder'} selected")
     func = get_dot_product if use_dot else get_cosine_similarity
     
     st.button("Calculate!", key="run")
@@ -46,6 +48,7 @@ if __name__ == "__main__":
                 prompt,
                 f,
                 func,
+                dec=dec,
                 normalized=(not use_dot),
                 eos=eos
             )  
