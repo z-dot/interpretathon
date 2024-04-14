@@ -38,7 +38,7 @@ def get_cosine_similarity(activations_list: List[Float[Tensor, "layer _seq_pos d
 def get_feature(sae: dict[str, SparseAutoencoder], layer: int, feature: int, decoder: bool = True) -> Float[Tensor, "d_model"]:
     if decoder:
         return sae[f"blocks.{layer}.hook_resid_pre"].W_dec[feature]
-    return sae[f"blocks.{layer}.hook_resid_pre"].W_enc[feature]
+    return sae[f"blocks.{layer}.hook_resid_pre"].W_enc[:, feature]
 
 def get_feature_movement(
         model: HookedTransformer,
