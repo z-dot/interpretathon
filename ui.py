@@ -8,11 +8,15 @@ from sae_lens.toolkit.pretrained_saes import get_gpt2_res_jb_saes
 from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, FactoredMatrix, ActivationCache
 
 from interpretathon import get_cosine_similarity, get_dot_product, run, str_to_feature_pair
+from fetchDescriptions import generate_url, scrape_data, request
 
 
 if __name__ == "__main__":
 
     st.title("Track to the Feature")
+    
+    if "URL_CACHE" not in st.session_state:
+        st.session_state["URL_CACHE"] = {}
 
     if "MODEL_LOADED" not in st.session_state:
         with st.spinner("Model loading in progress..."):
@@ -25,7 +29,7 @@ if __name__ == "__main__":
             st.session_state["MODEL_LOADED"] = True
     
     prompt = st.text_input("please enter your prompt", value="This movie is amazing! The best I have ever seen")
-    feature = st.text_input("please enter a feature", value="8.23510")
+    features = st.text_input("please enter a feature", value="8.23510")
     
     
     use_dot = st.toggle("Use Dot Product or Cosine Similarity", value=True)
@@ -38,6 +42,20 @@ if __name__ == "__main__":
     st.button("Calculate!", key="run")
     
     if st.session_state["run"]:
+        
+        st.subheader("Feature descriptions from neuronpedia.org")
+        for feature in features.split(","):
+            l, f = feature.split(".")
+            url = generate_url("gpt2-small", l, f)
+
+            if url not in st.session_state["URL_CACHE"]:
+                d = request(url).text
+                explanation = scrape_data(d)
+                if not explanation:
+                    explanation = "<ERROR, Explanation not found>"
+                st.session_state["URL_CACHE"][url] = f"* {l}.{f}: {explanation} \n(source: {url})"
+
+            st.markdown(st.session_state["URL_CACHE"][url])
         
         with st.spinner("Creating Plot..."):
             
