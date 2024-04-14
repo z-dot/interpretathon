@@ -190,6 +190,8 @@ def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_
         font_family="Courier",
         plot_bgcolor='white',
         paper_bgcolor='white',
+        xaxis={"showgrid":False, "ticks": ''},
+        yaxis={"showgrid":False, "ticks": ''},
     )
     
     # Update y-axis properties for the leftmost subplot

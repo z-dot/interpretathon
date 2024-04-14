@@ -8,6 +8,7 @@ from sae_lens.toolkit.pretrained_saes import get_gpt2_res_jb_saes
 from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, FactoredMatrix, ActivationCache
 
 from interpretathon import get_cosine_similarity, get_dot_product, run, str_to_feature_pair
+from fetchDescriptions import *
 
 
 if __name__ == "__main__":
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     
     with col2:
         model_options = ["Decoder", "Encoder"]
-        model_selection = st.selectbox("Select model", options=model_options, index=0)
+        model_selection = st.selectbox("Select direction type", options=model_options, index=0)
     
     
 
@@ -48,27 +49,11 @@ if __name__ == "__main__":
     
     func = get_dot_product if use_dot else get_cosine_similarity
     
-    st.button("Calculate!", key="run")
-    
     if prompt:
-        
-        st.subheader("Feature descriptions from neuronpedia.org")
-        for feature in features.split(","):
-            l, f = feature.split(".")
-            url = generate_url("gpt2-small", l, f)
-
-            if url not in st.session_state["URL_CACHE"]:
-                d = request(url).text
-                explanation = scrape_data(d)
-                if not explanation:
-                    explanation = "<ERROR, Explanation not found>"
-                st.session_state["URL_CACHE"][url] = f"* {l}.{f}: {explanation} \n(source: {url})"
-
-            st.markdown(st.session_state["URL_CACHE"][url])
         
         with st.spinner("Creating Plot..."):
             
-            f = str_to_feature_pair(feature)
+            f = str_to_feature_pair(features)
             fig = run(
                 st.session_state["MODEL"],
                 st.session_state["SAES"],
@@ -80,4 +65,18 @@ if __name__ == "__main__":
                 eos=eos
             )  
             st.plotly_chart(fig, True)
+        st.subheader("Feature descriptions from neuronpedia.org")
+        for feature in features.split(","):
+            l, f = feature.split(".")
+            url = generate_url("gpt2-small", l.strip(), f.strip())
+
+            if url not in st.session_state["URL_CACHE"]:
+                d = request(url).text
+                explanation = scrape_data(d)
+                if not explanation:
+                    explanation = "<ERROR, Explanation not found>"
+                st.session_state["URL_CACHE"][url] = f"* {l}.{f}: {explanation} \n(source: {url})"
+
+            st.markdown(st.session_state["URL_CACHE"][url])
+        
     # st.button("Calculate!", key="run")
