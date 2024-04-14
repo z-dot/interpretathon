@@ -184,7 +184,7 @@ def str_to_feature_pair(s: str) -> List[Tuple[int, int]]:
     out = []
     for x in s.split(','):
         y = x.strip().split('.')
-        out.append((y[0], y[1]))
+        out.append((int(y[0]), int(y[1])))
     return out
 
 
