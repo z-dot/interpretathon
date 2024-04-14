@@ -141,8 +141,10 @@ def plot_stacked_heatmaps_flipped(tensor, x_axis_names=None, y_axis_ticks=None):
             y=y_axis_ticks,
             x=[f'{j}' for j in range(z_data.shape[1])],
             hovertemplate="Layer: %{x}<br>Token: '%{y}'<br>%{z}<extra></extra>",
-            colorscale=[[0, 'darkblue'], [0.5, 'white'], [1, 'darkred']],
+            colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']],
             showscale=False,
+            zmin=-1,
+            zmax=1
         )
         fig.add_trace(trace, col=i+1, row=1)
         fig.update_xaxes(showticklabels=False)
