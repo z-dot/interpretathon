@@ -9,11 +9,13 @@ from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, 
 
 from interpretathon import get_cosine_similarity, get_dot_product, run, str_to_feature_pair
 
-            
 
 if __name__ == "__main__":
 
     st.title("Track to the Feature")
+    
+    if "URL_CACHE" not in st.session_state:
+        st.session_state["URL_CACHE"] = {}
 
     if "MODEL_LOADED" not in st.session_state:
         with st.spinner("Model loading in progress..."):
@@ -25,9 +27,8 @@ if __name__ == "__main__":
             st.session_state["MODEL"] = gpt2_small
             st.session_state["MODEL_LOADED"] = True
     
-    
-    prompt = st.text_input("Please enter your prompt", value="This movie is amazing! The best I have ever seen")
-    feature = st.text_input("Please enter a feature", value="8.23510")
+    prompt = st.text_input("please enter your prompt", value="This movie is amazing! The best I have ever seen")
+    features = st.text_input("please enter a feature", value="8.23510")
     
     col1, col2 = st.columns(2)
     
@@ -47,7 +48,24 @@ if __name__ == "__main__":
     
     func = get_dot_product if use_dot else get_cosine_similarity
     
+    st.button("Calculate!", key="run")
+    
     if prompt:
+        
+        st.subheader("Feature descriptions from neuronpedia.org")
+        for feature in features.split(","):
+            l, f = feature.split(".")
+            url = generate_url("gpt2-small", l, f)
+
+            if url not in st.session_state["URL_CACHE"]:
+                d = request(url).text
+                explanation = scrape_data(d)
+                if not explanation:
+                    explanation = "<ERROR, Explanation not found>"
+                st.session_state["URL_CACHE"][url] = f"* {l}.{f}: {explanation} \n(source: {url})"
+
+            st.markdown(st.session_state["URL_CACHE"][url])
+        
         with st.spinner("Creating Plot..."):
             
             f = str_to_feature_pair(feature)
