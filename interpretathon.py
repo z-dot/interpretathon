@@ -188,11 +188,10 @@ def plot_stacked_heatmaps_flipped(tensor, x_axis_names=None, y_axis_ticks=None):
             showscale=False,
         )
         fig.add_trace(trace, col=i+1, row=1)
-        fig.update_xaxes(showticklabel=False)
+        fig.update_xaxes(showticklabels=False)
     
     # Update figure layout
     fig.update_layout(
-        title='Stacked Interactive Heatmaps',
         width=200 * z_data.shape[0],  # Adjust the width based on the number of layers
         showlegend=False,
     )
