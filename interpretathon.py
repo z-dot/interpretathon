@@ -144,7 +144,7 @@ def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_
     for i in range(z_data.shape[0]):
         trace = go.Heatmap(
             z=np.flip(z_data[i].T, 0),  # Transpose the data to swap axes
-            y=y_axis_ticks,
+            y=[f"{index}: {repr(token)}" for index, token in enumerate(y_axis_ticks)],
             x=[f'{j}' for j in range(z_data.shape[1])],
             hovertemplate="Layer: %{x}<br>Token: '%{y}'<br>%{z}<extra></extra>",
             colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']] if normalized else 'viridis',
