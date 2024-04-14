@@ -53,10 +53,33 @@ def get_all_activations(model: HookedTransformer, cache: ActivationCache) -> Flo
     return t.stack([cache["resid_pre", i] for i in range(model.cfg.n_layers)])
 
 def get_dot_product(activations_list: List[Float[Tensor, "layer _seq_pos d_model"]], features: Float[Tensor, "features d_model"]) -> List[Float[Tensor, "features layer _seq_pos"]]:
-    return [einops.einsum(activations, features, "l t d, f d -> f l t") for activations in activations_list]
+    return [
+        einops.einsum(
+            activations,
+            features,
+            "l t d, f d -> f l t"
+        )
+        for activations
+        in activations_list
+    ]
 
 def get_cosine_similarity(activations_list: List[Float[Tensor, "layer _seq_pos d_model"]], features: Float[Tensor, "features d_model"]) -> List[Float[Tensor, "features layer _seq_pos"]]:
-    return [t.nn.functional.cosine_similarity(einops.rearrange(activation, "l s d -> 1 d l s"), features[:, :, None, None], dim=1) for activation in activations_list]
+    activations_list_expanded: List[Float[Tensor, "1 d_model layer _seq_pos"]] = [
+        einops.rearrange(activation, "l s d -> 1 d l s")
+        for activation
+        in activations_list
+    ]
+    features_expanded: Float[Tensor, "features d_model 1 1"] = features[:, :, None, None]
+    out: List[Float[Tensor, "features layer _seq_pos"]] = [
+        t.nn.functional.cosine_similarity(
+            activation,
+            features_expanded,
+            dim=1
+        )
+        for activation
+        in activations_list_expanded
+    ]
+    return out
 
 
 # class X:
@@ -124,12 +147,12 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 from typing import List, Tuple
 
-def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_axis_ticks=None):
+def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_axis_ticks=None, eos=True):
     z_data = tensor.numpy()  # Convert tensor to numpy array
     
     if y_axis_ticks is None:
         y_axis_ticks = [f'Y{i+1}' for i in range(z_data.shape[1])]
-    y_axis_ticks = y_axis_ticks[::-1]
+    y_axis_ticks = [f"{index}: {repr(token)}" for index, token in enumerate(y_axis_ticks)][::-1]
     
     if x_axis_names is None:
         x_axis_names = [f'X{i+1}' for i in range(z_data.shape[0])]
@@ -144,7 +167,7 @@ def plot_stacked_heatmaps_flipped(tensor, normalized=True, x_axis_names=None, y_
     for i in range(z_data.shape[0]):
         trace = go.Heatmap(
             z=np.flip(z_data[i].T, 0),  # Transpose the data to swap axes
-            y=[f"{index}: {repr(token)}" for index, token in enumerate(y_axis_ticks)],
+            y=y_axis_ticks,
             x=[f'{j}' for j in range(z_data.shape[1])],
             hovertemplate="Layer: %{x}<br>Token: '%{y}'<br>%{z}<extra></extra>",
             colorscale=[[0.0, 'darkblue'], [0.5, 'white'], [0.75, 'red'], [1, 'black']] if normalized else 'viridis',
@@ -194,9 +217,9 @@ def str_to_feature_pair(s: str) -> List[Tuple[int, int]]:
     return out
 
 
-def run(model, saes, prompt, features, func, dec=True, normalized=True):
+def run(model, saes, prompt, features, func, dec=True, normalized=True, eos=True):
     tensor = get_feature_movement(model, saes, [prompt], func, features, dec)
     data = tensor[0].cpu()
-    return plot_stacked_heatmaps_flipped(data, normalized=normalized, x_axis_names=[f"{layer}.{feature}" for layer, feature in features], y_axis_ticks=model.to_str_tokens(prompt))
+    return plot_stacked_heatmaps_flipped(data, normalized=normalized, x_axis_names=[f"{layer}.{feature}" for layer, feature in features], y_axis_ticks=model.to_str_tokens(prompt), eos=eos)
 
 # %%

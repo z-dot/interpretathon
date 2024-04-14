@@ -29,6 +29,7 @@ if __name__ == "__main__":
     
     
     use_dot = st.toggle("Use Dot Product or Cosine Similarity", value=True)
+    eos = st.toggle("Include EOS token", value=True)
     st.write(f"{'Dot product' if use_dot else 'Cosine Similarity'} selected")
     func = get_dot_product if use_dot else get_cosine_similarity
     
@@ -39,6 +40,14 @@ if __name__ == "__main__":
         with st.spinner("Creating Plot..."):
             
             f = str_to_feature_pair(feature)
-            fig = run(st.session_state["MODEL"], st.session_state["SAES"], prompt, f, func, normalized=(not use_dot))  
-            st.plotly_chart(fig)
+            fig = run(
+                st.session_state["MODEL"],
+                st.session_state["SAES"],
+                prompt,
+                f,
+                func,
+                normalized=(not use_dot),
+                eos=eos
+            )  
+            st.plotly_chart(fig, True)
             
