@@ -16,8 +16,14 @@ import einops
 
 from huggingface_hub import hf_hub_download
 
+if t.cuda.is_available():
+    device = t.device("cuda")
+elif t.backends.mps.is_available():
+    device = t.device("mps")
+else:
+    device = t.device("cpu")
+
 if __name__ == "__main__":
-    device = t.device("cuda") if t.cuda.is_available() else t.device("mps")
     t.set_default_device(device)
     saes, sparsities = get_gpt2_res_jb_saes()
     gpt2_small: HookedTransformer = HookedTransformer.from_pretrained("gpt2-small")
