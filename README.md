@@ -8,6 +8,8 @@
 > python -m venv ./venv
 > venv\Scripts\activate.bat   (for windows)
 
+Note that we were using python3.10  (we have trouble with installing 'sae_lens' with other versions of Python)
+
 #### Install Requirements
 
 > pip install -r requirements.txt
@@ -16,8 +18,3 @@
 
 > streamlit run ui.py
 
-
-### Todo
-
-* color scheme (for cosign sim -1, to 1  map red to blue)  for dot get values then scale min/max to 0-255?
-* Improve streamlit performance (eg cache model and values)

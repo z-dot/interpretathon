@@ -8,7 +8,7 @@ from sae_lens.toolkit.pretrained_saes import get_gpt2_res_jb_saes
 from transformer_lens import utils, HookedTransformer, HookedTransformerConfig, FactoredMatrix, ActivationCache
 
 from interpretathon import get_cosine_similarity, get_dot_product, run, str_to_feature_pair
-from fetchDescriptions import *
+from fetchDescriptions import generate_url_sae, request, scrape_data
 
 
 if __name__ == "__main__":
@@ -68,7 +68,10 @@ if __name__ == "__main__":
         st.subheader("Feature descriptions from neuronpedia.org")
         for feature in features.split(","):
             l, f = feature.split(".")
-            url = generate_url("gpt2-small", l.strip(), f.strip())
+            #url = generate_url("gpt2-small", l.strip(), f.strip())
+            
+            sae_with_layer = f"{l.strip()}-res-jb"
+            url = generate_url_sae("gpt2-small", sae_with_layer, f.strip())
 
             if url not in st.session_state["URL_CACHE"]:
                 d = request(url).text
